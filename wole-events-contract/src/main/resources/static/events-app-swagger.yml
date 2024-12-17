@@ -1,0 +1,380 @@
+swagger: '2.0'
+info:
+  version: 1.0.0
+  title: Events App
+  description: This API allows customers to create, find and reserve tickets for events, view and manage their reservations, and be notified before the event kickoff.
+host: localhost:8080
+schemes:
+  - http
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+paths:
+  /users:
+    post:
+      summary: Create a new user.
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      description: This endpoint allows customers to create a new user.
+      parameters:
+        - in: body
+          name: user
+          description: The user to create.
+          schema:
+            $ref: '#/definitions/User'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/UserCreatedDTO'
+        '400':
+          description: Bad request
+          schema:
+            $ref: '#/definitions/BadRequest'
+        '500':
+          description: Internal Server Error.
+                - The server encountered an unexpected error while processing the request.
+          schema:
+            $ref: '#/definitions/InternalServerError'
+      tags:
+        - users
+  /auth:
+    post:
+      summary: Authenticate a user.
+      produces:
+        - application/json
+      description: This endpoint allows users to authenticate and receive a Bearer token.
+      parameters:
+        - in: body
+          name: credentials
+          description: The user's credentials.
+          schema:
+            $ref: '#/definitions/Credentials'
+      responses:
+        '200':
+          description: OK
+          headers:
+            Authorization:
+              type: string
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error.
+            - The server encountered an unexpected error while processing the request.
+          schema:
+            $ref: '#/definitions/InternalServerError'
+      tags:
+        - users
+  /events:
+    post:
+      summary: Create a new event.
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      description: This endpoint allows customers to create a new event.
+      parameters:
+        - in: body
+          name: event
+          description: The event to create.
+          schema:
+            $ref: '#/definitions/EventRequestDTO'
+      responses:
+        '201':
+          description: Created
+          schema:
+            type: object
+            properties:
+              eventId:
+                type: integer
+                format: int64
+        '400':
+          description: Bad request
+          schema:
+            $ref: '#/definitions/BadRequest'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error.
+            - The server encountered an unexpected error while processing the request.
+          schema:
+            $ref: '#/definitions/InternalServerError'
+      tags:
+        - events
+      security:
+        - Bearer: []
+    get:
+      summary: Get all events or search for events.
+      produces:
+        - application/json
+      description: This endpoint allows customers to retrieve all events or search for events by name, date range or category.
+      parameters:
+        - in: query
+          name: name
+          description: The name of the event to search for.
+          type: string
+        - in: query
+          name: startDate
+          description: The start date of the date range to search for events in (inclusive).
+          type: string
+          format: date-time
+        - in: query
+          name: endDate
+          description: The end date of the date range to search for events in (inclusive).
+          type: string
+          format: date-time
+        - in: query
+          name: category
+          description: The category of the event to search for.
+          type: string
+          enum:
+            - Concert 
+            - Conference 
+            - Game
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/EventResponseDTO'
+        '404':
+          description: Not found
+        '500':
+          description: Internal Server Error.
+            - The server encountered an unexpected error while processing the request.
+          schema:
+            $ref: '#/definitions/InternalServerError'
+      tags:
+        - events
+  /events/bookings:
+    get:
+      summary: Get booked events of a user.
+      produces:
+        - application/json
+      description: This endpoint allows customers to get the events booked by a user.
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/EventResponseDTO'
+        '404':
+          description: Not found
+        '500':
+          description: Internal Server Error.
+            - The server encountered an unexpected error while processing the request.
+          schema:
+            $ref: '#/definitions/InternalServerError'
+      tags:
+        - events
+      security:
+        - Bearer: []
+  /events/{eventId}/tickets:
+    post:
+      summary: Reserve tickets for an event.
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      description: This endpoint allows customers to reserve tickets for an event.
+      parameters:
+        - in: path
+          name: eventId
+          description: The ID of the event to reserve tickets for.
+          required: true
+          type: integer
+          format: int64
+        - in: body
+          name: ticketRequest
+          description: The ticket reservation request.
+          schema:
+            $ref: '#/definitions/TicketRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/TicketResponseDTO'
+        '400':
+          description: Bad request
+          schema:
+            $ref: '#/definitions/BadRequest'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error.
+            - The server encountered an unexpected error while processing the request.
+          schema:
+            $ref: '#/definitions/InternalServerError'
+      tags:
+        - tickets
+      security:
+        - Bearer: []
+  /events/{reservationId}/cancel:
+    post:
+      summary: Cancel a reservation.
+      produces:
+        - application/json
+      description: This endpoint allows user to cancel a reservation.
+      parameters:
+        - in: path
+          name: reservationId
+          description: The ID of the reservationId to cancel.
+          required: true
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ok
+          schema:
+            $ref: '#/definitions/DeleteReservationResponse'
+        '400':
+          description: Bad request
+          schema:
+            $ref: '#/definitions/BadRequest'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error.
+            - The server encountered an unexpected error while processing the request.
+          schema:
+            $ref: '#/definitions/InternalServerError'
+      tags:
+        - tickets
+      security:
+        - Bearer: []
+definitions:
+  User:
+    type: object
+    required:
+      - name
+      - email
+      - password
+    properties:
+      name:
+        type: string
+        maxLength: 100
+      email:
+        type: string
+        format: email
+      password:
+        type: string
+        minLength: 8
+  UserCreatedDTO:
+    type: object
+    properties:
+      userId:
+        type: integer
+        format: int32
+  Credentials:
+    type: object
+    required:
+      - email
+      - password
+    properties:
+      email:
+        type: string
+        format: email
+      password:
+        type: string
+        minLength: 8
+  EventRequestDTO:
+    type: object
+    required:
+      - name
+      - date
+      - availableAttendeesCount
+      - description
+      - category
+    properties:
+      name:
+        type: string
+        maxLength: 100
+      date:
+        type: string
+        format: date-time
+      availableAttendeesCount:
+        type: integer
+        minimum: 1
+        maximum: 1000
+      description:
+        type: string
+        maxLength: 500
+      category:
+          $ref: '#/definitions/Category'
+  EventResponseDTO:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+      date:
+        type: string
+        format: date-time
+      availableAttendeesCount:
+        type: integer
+      description:
+        type: string
+      category:
+          $ref: '#/definitions/Category'
+  TicketRequest:
+    type: object
+    required:
+      - attendeesCount
+    properties:
+      attendeesCount:
+        type: integer
+        minimum: 1
+  TicketResponseDTO:
+    type: object
+    required:
+      - attendeesCount
+    properties:
+      reservationId:
+        type: string
+        format: uuid
+      attendeesCount:
+        type: integer
+      tickets:
+        type: array
+        items:
+          $ref: "#/definitions/Ticket"
+  Ticket:
+    type: object
+    properties:
+      id:
+        type: integer
+  DeleteReservationResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+  Category:
+    type: string
+    enum:
+      - Concert 
+      - Conference 
+      - Game
+  BadRequest:
+    $ref: "#/definitions/Errors"
+  InternalServerError:
+    $ref: "#/definitions/Error"
+  Errors:
+    type: array
+    items:
+      $ref: "#/definitions/Error"
+  Error:
+    type: object
+    required:
+      - exception
+    properties:
+      errorMessage:
+        type: string

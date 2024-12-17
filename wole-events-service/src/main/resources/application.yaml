@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: wole-events-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+  liquibase:
+    change-log: classpath:/db.changelog/db.changelog-master.xml
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+jwt:
+  secret: ${JWT_SECRET}
+  valid-for: 600
+  issuer: event-booking-service
+logging:
+  level:
+    org:
+      hibernate:
+        stat: DEBUG
+        SQL: DEBUG
+
+
+# jpa:
+#   hibernate:
+#     ddl-auto: create-drop
+#   show-sql: true
+
+#   url: jdbc:h2:mem:eventsapp
+#   username: sa
+#   password: password
+#   driverClassName: org.h2.Driver
+#  h2:
+#    console:
+#      enabled: true
+#      path: /h2
